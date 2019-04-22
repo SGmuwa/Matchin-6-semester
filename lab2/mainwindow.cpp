@@ -99,14 +99,14 @@ public:
         this->tool = tool;
     }
     // Получаем жизни пойца.
-    int getHealth()
+    float getHealth()
     {
-        return (int)(tool.getAddPercentHealth() / 100.0f * unit.getHealth());
+        return tool.getAddPercentHealth() / 100.0f * unit.getHealth();
     }
     // Получаем атаку бойца.
-    int getAttack()
+    float getAttack()
     {
-        return (int)(tool.getAddPercentDamage() / 100.0f * unit.getAttack());
+        return tool.getAddPercentDamage() / 100.0f * unit.getAttack();
     }
 private:
     AttackUnit unit;
@@ -116,33 +116,65 @@ private:
 class SideOfBattle
 {
 public:
-    void setUnit(AttackUnit unit, int position)
+    SideOfBattle(AttackUnit avalibleUnits[], size_t avalibleUnits_size, ToolForWar avalibleTools[], size_t avalibleTools_size)
     {
-        fighters[position].setUnit(unit);
+        for(size_t i = 0; i < avalibleUnits_size; i++)
+            this->avalibleUnits.append(avalibleUnits[i]);
+        for(size_t i = 0; i < avalibleTools_size; i++)
+            this->avalibleTools.append(avalibleTools[i]);
     }
-    void setTool(ToolForWar tool, int position)
+    SideOfBattle(QList<AttackUnit> avalibleUnits, QList<ToolForWar> avalibleTools)
     {
-        fighters[position].setTool(tool);
+        for(AttackUnit unit : avalibleUnits)
+            this->avalibleUnits.append(unit);
+        for(ToolForWar tool : avalibleTools)
+            this->avalibleTools.append(tool);
+    }
+    void setUnit(int unitType, int position)
+    {
+        fighters[position].setUnit(avalibleUnits.at(unitType));
+    }
+    void setTool(int toolType, int position)
+    {
+        fighters[position].setTool(avalibleTools.at(toolType));
     }
     // Получает здоровье стороны.
-    int getHealth()
+    float getHealth()
     {
-        int output = 0;
+        float output = 0;
         for(int i = 0; i < 3; i++)
-            output+= fighters->getHealth();
+            output += fighters->getHealth();
         return output;
     }
     // Получает атаку стороны.
-    int getAttack()
+    float getAttack()
     {
-        int output = 0;
+        float output = 0;
         for(int i = 0; i < 3; i++)
             output += fighters->getAttack();
         return output;
     }
+    const QList<AttackUnit> getAvalibleUnits()
+    {
+        return avalibleUnits;
+    }
+    const QList<ToolForWar> getAvalibleTools()
+    {
+        return avalibleTools;
+    }
 private:
     Fighter fighters[3] = {Fighter(), Fighter(), Fighter()};
-
+    QList<AttackUnit> avalibleUnits;
+    QList<ToolForWar> avalibleTools;
 };
 
+class Battle
+{
+public:
+    Battle()
+    {
 
+    }
+private:
+    SideOfBattle side[2] = {SideOfBattle(), SideOfBattle()};
+};
