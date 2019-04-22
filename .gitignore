@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+*.stash
+build-lab2-Desktop_Qt_5_12_3_MinGW_32_bit-Debug/**
+
