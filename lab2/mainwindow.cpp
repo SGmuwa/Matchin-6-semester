@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QLabel>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -258,12 +259,29 @@ private:
 class VisualManagerUnit
 {
 public:
-    VisualManagerUnit()
+    VisualManagerUnit(MainWindow * mainWindow, QComboBox * comboBox, QLabel * labelHealth, QLabel * labelDamage, QList<IHaveHealthDamageName> * avalible)
     {
+        this->comboBox = comboBox;
+        QPushButton a;
+        a.released();
+        this->labelHealth = labelHealth;
+        this->labelDamage = labelDamage;
+        this->avalible = avalible;
+        mainWindow->connect(comboBox, SIGNAL(currentIndexChanged(int)), mainWindow, SLOT(help));
+    }
+    void update(void) const{
 
     }
 private:
-    QComboBox * abs;
+    void eventCurrentIndexChanged(int index)
+    {
+        labelHealth->setNum((double)(avalible->at(index).getHealth()));
+        labelDamage->setNum((double)(avalible->at(index).getDamage()));
+    }
+    QComboBox * comboBox;
+    QLabel * labelHealth;
+    QLabel * labelDamage;
+    QList<IHaveHealthDamageName> * avalible;
 };
 
 
