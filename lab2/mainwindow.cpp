@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -13,76 +14,107 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-// Экипировка.
-class ToolForWar
+class IHaveHealthDamageName
 {
 public:
-    ToolForWar()
+    IHaveHealthDamageName(){}
+    // Получает жизни.
+    float virtual getHealth(void) const;
+    // Получает урон.
+    float virtual getDamage(void) const;
+    // Получает имя.
+    QString virtual getName(void) const;
+    virtual ~IHaveHealthDamageName();
+    IHaveHealthDamageName(const IHaveHealthDamageName&) = default; IHaveHealthDamageName(IHaveHealthDamageName&&) = default; IHaveHealthDamageName& operator=(const IHaveHealthDamageName&) = default; IHaveHealthDamageName& operator=(IHaveHealthDamageName&&) = default;
+protected:
+    // Устанавливает здоровье.
+    void virtual setHealth(float damage);
+    // Устанавливает урон.
+    void virtual setDamage(float damage);
+    // Устанавливает имя.
+    void virtual setName(QString name);
+};
+
+class AbstractHaveHealthDamageName : public IHaveHealthDamageName
+{
+public:
+    AbstractHaveHealthDamageName()
     {
-        *this = ToolForWar("NULL", -1, -1);
+        health = -1;
+        damage = -1;
     }
-    ToolForWar(QString name, int addPercentHealth, int addPercentDamage)
+    AbstractHaveHealthDamageName(QString name, float health, float damage)
     {
-        this->addPercentHealth = addPercentHealth;
-        this->addPercentDamage = addPercentDamage;
-        this->name = name;
+        this->setName(name);
+        this->setHealth(health);
+        this->setDamage(damage);
     }
-    // Получает количество бонуса: добавление в процентах к здоровью.
-    int getAddPercentHealth()
+    // Получает количество здоровья.
+    float getHealth(void) const override
     {
-        return addPercentHealth;
+        return health;
     }
-    // Получает количество бонуса: добавление в процентах к урону.
-    int getAddPercentDamage()
+    // Получает количество урона.
+    float virtual getDamage(void) const override
     {
-        return addPercentDamage;
+        return damage;
     }
-    QString getName()
+    // Получает имя.
+    QString virtual getName(void) const override
     {
         return name;
     }
+    AbstractHaveHealthDamageName(const AbstractHaveHealthDamageName&) = default; AbstractHaveHealthDamageName(AbstractHaveHealthDamageName&&) = default; AbstractHaveHealthDamageName& operator=(const AbstractHaveHealthDamageName&) = default; AbstractHaveHealthDamageName& operator=(AbstractHaveHealthDamageName&&) = default;
+    virtual ~AbstractHaveHealthDamageName() override;
+protected:
+    // Устанавливает количество здоровья.
+    void setHealth(float health) override
+    {
+        this->health = health;
+    }
+    // Устанавливает количество урона
+    void setDamage(float damage) override
+    {
+        this->damage = damage;
+    }
+    void setName(QString name) override
+    {
+        this->name = name;
+    }
 private:
-    // Добавляет в процентах к здоровью
-    int addPercentHealth;
-    // Добавляет в процентах к урону.
-    int addPercentDamage;
-    // Имя экипировки.
+    float health;
+    float damage;
     QString name;
+};
+
+// Экипировка.
+class ToolForWar : public AbstractHaveHealthDamageName
+{
+public:
+    ToolForWar()
+        : AbstractHaveHealthDamageName("NULL", -1, -1){}
+    ToolForWar(QString name, float addPercentHealth, float addPercentDamage)
+        : AbstractHaveHealthDamageName(name, addPercentHealth, addPercentDamage) {}
+    ToolForWar(const ToolForWar&) = default; ToolForWar(ToolForWar&&) = default; ToolForWar& operator=(const ToolForWar&) = default; ToolForWar& operator=(ToolForWar&&) = default;
+    virtual ~ToolForWar();
+private:
 };
 
 // Класс, представляющий атакующую единицу.
-class AttackUnit
+class AttackUnit : public AbstractHaveHealthDamageName
 {
 public:
     AttackUnit()
-    {
-        this->name = "NULL";
-        this->attack = -1;
-        this->health = -1;
-    }
-    AttackUnit(QString name, int attack, int health)
-    {
-        this->name = name;
-        this->attack = attack;
-        this->health = health;
-    }
-    // Получить атаку юнита.
-    int getAttack() {return attack;}
-    // Получить оборону юнита.
-    int getHealth() {return health;}
-    // Получить имя юнита.
-    QString getName() {return name;}
+        : AbstractHaveHealthDamageName("NULL", -1, -1) {}
+    AttackUnit(QString name, float health, float damage)
+        : AbstractHaveHealthDamageName(name, health, damage) {}
+    AttackUnit(const AttackUnit&) = default; AttackUnit(AttackUnit&&) = default; AttackUnit& operator=(const AttackUnit&) = default; AttackUnit& operator=(AttackUnit&&) = default;
+    virtual ~AttackUnit();
 private:
-    // Атака.
-    int attack;
-    // Здоровье.
-    int health;
-    // Имя юнита.
-    QString name;
 };
 
 // Боец. Юнит с оружием.
-class Fighter
+class Fighter : public IHaveHealthDamageName
 {
 public:
     Fighter()
@@ -99,21 +131,23 @@ public:
         this->tool = tool;
     }
     // Получаем жизни пойца.
-    float getHealth()
+    float getHealth() const override
     {
-        return tool.getAddPercentHealth() / 100.0f * unit.getHealth();
+        return tool.getHealth() / 100.0f * unit.getHealth();
     }
     // Получаем атаку бойца.
-    float getAttack()
+    float getDamage() const override
     {
-        return tool.getAddPercentDamage() / 100.0f * unit.getAttack();
+        return tool.getDamage() / 100.0f * unit.getDamage();
     }
+    Fighter(const Fighter&) = default; Fighter(Fighter&&) = default; Fighter& operator=(const Fighter&) = default; Fighter& operator=(Fighter&&) = default;
+    virtual ~Fighter() override;
 private:
     AttackUnit unit;
     ToolForWar tool;
 };
 
-class SideOfBattle
+class SideOfBattle : public IHaveHealthDamageName
 {
 public:
     SideOfBattle(AttackUnit avalibleUnits[], size_t avalibleUnits_size, ToolForWar avalibleTools[], size_t avalibleTools_size)
@@ -139,7 +173,7 @@ public:
         fighters[position].setTool(avalibleTools.at(toolType));
     }
     // Получает здоровье стороны.
-    float getHealth()
+    float getHealth() const override
     {
         float output = 0;
         for(int i = 0; i < 3; i++)
@@ -147,21 +181,23 @@ public:
         return output;
     }
     // Получает атаку стороны.
-    float getAttack()
+    float getDamage() const override
     {
         float output = 0;
         for(int i = 0; i < 3; i++)
-            output += fighters->getAttack();
+            output += fighters->getDamage();
         return output;
     }
-    const QList<AttackUnit> getAvalibleUnits()
+    const QList<AttackUnit> getAvalibleUnits() const
     {
         return avalibleUnits;
     }
-    const QList<ToolForWar> getAvalibleTools()
+    const QList<ToolForWar> getAvalibleTools() const
     {
         return avalibleTools;
     }
+    SideOfBattle(const SideOfBattle&) = default; SideOfBattle(SideOfBattle&&) = default; SideOfBattle& operator=(const SideOfBattle&) = default; SideOfBattle& operator=(SideOfBattle&&) = default;
+    virtual ~SideOfBattle() override;
 private:
     Fighter fighters[3] = {Fighter(), Fighter(), Fighter()};
     QList<AttackUnit> avalibleUnits;
@@ -173,8 +209,67 @@ class Battle
 public:
     Battle()
     {
+        QList<AttackUnit> units;
+        QList<ToolForWar> tools;
+        units.append(AttackUnit("LEFT", 1, 1));
+        tools.append(ToolForWar("TOOLLEFT", 1, 2));
+        side.append(SideOfBattle(units, tools));
+        units.clear();
+        tools.clear();
+        units.append(AttackUnit("RIGHT", 2, 2));
+        tools.append(ToolForWar("TOOLRIGTH", 3, 4));
+        side.append(SideOfBattle(units, tools));
+    }
+    // Возвращает идентификатор победителя. Если -1, то ничья.
+    int whoWin()
+    {
+        int output = 0;
+        bool isOdd = false; // true, если ничья.
+        for(int i = output + 1; i < side.count(); i++)
+            switch (whoWin(output, i)) {
+            case 0:
+                break;
+            case -1:
+                isOdd = true;
+                /* break; do not need. */ [[clang::fallthrough]];
+            case 1:
+                output = i;
+                break;
+            }
+        return isOdd ? -1 : output;
+    }
+private:
+    // 0 - left, 1 - right, -1 - ничья.
+    int whoWin(int leftIndex, int rightIndex) const
+    {
+        return whoWin(side.at(leftIndex), side.at(rightIndex));
+    }
+    // 0 - left, 1 - right, -1 - ничья.
+    int whoWin(SideOfBattle left, SideOfBattle right) const
+    {
+        float healthLeft = left.getHealth() - right.getDamage();
+        float healthRight = right.getHealth() - left.getDamage();
+        return healthLeft > healthRight ? 0 : healthRight > healthLeft ? 1 : -1;
+    }
+    QList<SideOfBattle> side;
+};
+
+// Класс, который содержит поля интерфейса для заполнения юнита.
+class VisualManagerUnit
+{
+public:
+    VisualManagerUnit()
+    {
 
     }
 private:
-    SideOfBattle side[2] = {SideOfBattle(), SideOfBattle()};
+    QComboBox * abs;
 };
+
+
+IHaveHealthDamageName::~IHaveHealthDamageName(){}
+AbstractHaveHealthDamageName::~AbstractHaveHealthDamageName(){}
+ToolForWar::~ToolForWar(){}
+AttackUnit::~AttackUnit(){}
+Fighter::~Fighter(){}
+SideOfBattle::~SideOfBattle(){}
