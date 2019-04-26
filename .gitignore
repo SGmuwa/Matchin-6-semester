@@ -33,3 +33,5 @@
 *.stash
 build-lab2-Desktop_Qt_5_12_3_MinGW_32_bit-Debug/**
 
+lab2/lab2.pro.user
+*.user
