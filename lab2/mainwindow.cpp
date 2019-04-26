@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QLabel>
+#include <QException>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -20,20 +21,19 @@ class IHaveHealthDamageName
 public:
     IHaveHealthDamageName(){}
     // Получает жизни.
-    float virtual getHealth(void) const;
+    float virtual getHealth(void) const = 0;
     // Получает урон.
-    float virtual getDamage(void) const;
+    float virtual getDamage(void) const = 0;
     // Получает имя.
-    QString virtual getName(void) const;
-    virtual ~IHaveHealthDamageName();
-    IHaveHealthDamageName(const IHaveHealthDamageName&) = default; IHaveHealthDamageName(IHaveHealthDamageName&&) = default; IHaveHealthDamageName& operator=(const IHaveHealthDamageName&) = default; IHaveHealthDamageName& operator=(IHaveHealthDamageName&&) = default;
+    QString virtual getName(void) const = 0;
+    virtual ~IHaveHealthDamageName(){}
 protected:
     // Устанавливает здоровье.
-    void virtual setHealth(float damage);
+    void virtual setHealth(float damage) = 0;
     // Устанавливает урон.
-    void virtual setDamage(float damage);
+    void virtual setDamage(float damage) = 0;
     // Устанавливает имя.
-    void virtual setName(QString name);
+    void virtual setName(QString name) = 0;
 };
 
 class AbstractHaveHealthDamageName : public IHaveHealthDamageName
@@ -51,7 +51,7 @@ public:
         this->setDamage(damage);
     }
     // Получает количество здоровья.
-    float getHealth(void) const override
+    float virtual getHealth(void) const override
     {
         return health;
     }
@@ -65,8 +65,7 @@ public:
     {
         return name;
     }
-    AbstractHaveHealthDamageName(const AbstractHaveHealthDamageName&) = default; AbstractHaveHealthDamageName(AbstractHaveHealthDamageName&&) = default; AbstractHaveHealthDamageName& operator=(const AbstractHaveHealthDamageName&) = default; AbstractHaveHealthDamageName& operator=(AbstractHaveHealthDamageName&&) = default;
-    virtual ~AbstractHaveHealthDamageName() override;
+    virtual ~AbstractHaveHealthDamageName() override {}
 protected:
     // Устанавливает количество здоровья.
     void setHealth(float health) override
@@ -93,12 +92,10 @@ class ToolForWar : public AbstractHaveHealthDamageName
 {
 public:
     ToolForWar()
-        : AbstractHaveHealthDamageName("NULL", -1, -1){}
+        : AbstractHaveHealthDamageName("NULL", -1, -1){ }
     ToolForWar(QString name, float addPercentHealth, float addPercentDamage)
         : AbstractHaveHealthDamageName(name, addPercentHealth, addPercentDamage) {}
-    ToolForWar(const ToolForWar&) = default; ToolForWar(ToolForWar&&) = default; ToolForWar& operator=(const ToolForWar&) = default; ToolForWar& operator=(ToolForWar&&) = default;
-    virtual ~ToolForWar();
-private:
+    virtual ~ToolForWar() override {}
 };
 
 // Класс, представляющий атакующую единицу.
@@ -109,8 +106,7 @@ public:
         : AbstractHaveHealthDamageName("NULL", -1, -1) {}
     AttackUnit(QString name, float health, float damage)
         : AbstractHaveHealthDamageName(name, health, damage) {}
-    AttackUnit(const AttackUnit&) = default; AttackUnit(AttackUnit&&) = default; AttackUnit& operator=(const AttackUnit&) = default; AttackUnit& operator=(AttackUnit&&) = default;
-    virtual ~AttackUnit();
+    virtual ~AttackUnit() override {}
 private:
 };
 
@@ -118,7 +114,7 @@ private:
 class Fighter : public IHaveHealthDamageName
 {
 public:
-    Fighter()
+    Fighter(): IHaveHealthDamageName()
     {
     }
     // Меняем бойца.
@@ -132,22 +128,31 @@ public:
         this->tool = tool;
     }
     // Получаем жизни пойца.
-    float getHealth() const override
+    virtual float getHealth() const override
     {
         return tool.getHealth() / 100.0f * unit.getHealth();
     }
     // Получаем атаку бойца.
-    float getDamage() const override
+    virtual float getDamage() const override
     {
         return tool.getDamage() / 100.0f * unit.getDamage();
     }
-    Fighter(const Fighter&) = default; Fighter(Fighter&&) = default; Fighter& operator=(const Fighter&) = default; Fighter& operator=(Fighter&&) = default;
-    virtual ~Fighter() override;
+    // Получаем имя бойца.
+    virtual QString getName() const override
+    {
+        return unit.getName() + tool.getName();
+    }
+    virtual ~Fighter() override {}
 private:
     AttackUnit unit;
     ToolForWar tool;
+    void setHealth(float) override{throw QException();}
+    void setDamage(float) override{throw QException();}
+    void setName(QString) override{throw QException();}
 };
 
+// Класс отвечает за одну из сторон битвы.
+// IHaveHealthDamageName означает, что мы можем получить жизни и урон этой стороны.
 class SideOfBattle : public IHaveHealthDamageName
 {
 public:
@@ -174,7 +179,7 @@ public:
         fighters[position].setTool(avalibleTools.at(toolType));
     }
     // Получает здоровье стороны.
-    float getHealth() const override
+    virtual float getHealth() const override
     {
         float output = 0;
         for(int i = 0; i < 3; i++)
@@ -182,11 +187,18 @@ public:
         return output;
     }
     // Получает атаку стороны.
-    float getDamage() const override
+    virtual float getDamage() const override
     {
         float output = 0;
         for(int i = 0; i < 3; i++)
             output += fighters->getDamage();
+        return output;
+    }
+    virtual QString getName() const override
+    {
+        QString output;
+        for(int i = 0; i < 3; i++)
+            output += fighters[i].getName();
         return output;
     }
     const QList<AttackUnit> getAvalibleUnits() const
@@ -197,14 +209,17 @@ public:
     {
         return avalibleTools;
     }
-    SideOfBattle(const SideOfBattle&) = default; SideOfBattle(SideOfBattle&&) = default; SideOfBattle& operator=(const SideOfBattle&) = default; SideOfBattle& operator=(SideOfBattle&&) = default;
-    virtual ~SideOfBattle() override;
+    virtual ~SideOfBattle() override{}
 private:
     Fighter fighters[3] = {Fighter(), Fighter(), Fighter()};
     QList<AttackUnit> avalibleUnits;
     QList<ToolForWar> avalibleTools;
+    void setHealth(float) override{throw QException();}
+    void setDamage(float) override{throw QException();}
+    void setName(QString) override{throw QException();}
 };
 
+// Класс отвечает за обе стороны битвы.
 class Battle
 {
 public:
@@ -259,15 +274,19 @@ private:
 class VisualManagerUnit
 {
 public:
-    VisualManagerUnit(MainWindow * mainWindow, QComboBox * comboBox, QLabel * labelHealth, QLabel * labelDamage, QList<IHaveHealthDamageName> * avalible)
+    VisualManagerUnit(MainWindow * mainWindow, QComboBox * comboBox, QLabel * labelHealth, QLabel * labelDamage, QList<IHaveHealthDamageName*> * avalible)
     {
         this->comboBox = comboBox;
-        QPushButton a;
-        a.released();
         this->labelHealth = labelHealth;
         this->labelDamage = labelDamage;
         this->avalible = avalible;
-        mainWindow->connect(comboBox, SIGNAL(currentIndexChanged(int)), mainWindow, SLOT(help));
+        mainWindow->connect(comboBox, SIGNAL(currentIndexChanged(int)), mainWindow, SLOT(eventCurrentIndexChanged(int)));
+        if(comboBox->count() != 0)
+            throw new QException();
+        for(IHaveHealthDamageName * elm : *avalible)
+        {
+            comboBox->addItem(elm->getName());
+        }
     }
     void update(void) const{
 
@@ -275,19 +294,11 @@ public:
 private:
     void eventCurrentIndexChanged(int index)
     {
-        labelHealth->setNum((double)(avalible->at(index).getHealth()));
-        labelDamage->setNum((double)(avalible->at(index).getDamage()));
+        labelHealth->setNum((double)(avalible->at(index)->getHealth()));
+        labelDamage->setNum((double)(avalible->at(index)->getDamage()));
     }
     QComboBox * comboBox;
     QLabel * labelHealth;
     QLabel * labelDamage;
-    QList<IHaveHealthDamageName> * avalible;
+    QList<IHaveHealthDamageName*> * avalible;
 };
-
-
-IHaveHealthDamageName::~IHaveHealthDamageName(){}
-AbstractHaveHealthDamageName::~AbstractHaveHealthDamageName(){}
-ToolForWar::~ToolForWar(){}
-AttackUnit::~AttackUnit(){}
-Fighter::~Fighter(){}
-SideOfBattle::~SideOfBattle(){}
