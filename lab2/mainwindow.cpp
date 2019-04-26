@@ -117,6 +117,12 @@ public:
     Fighter(): IHaveHealthDamageName()
     {
     }
+    Fighter(AttackUnit unit, ToolForWar tool)
+        : IHaveHealthDamageName()
+    {
+        setUnit(unit);
+        setTool(tool);
+    }
     // Меняем бойца.
     void setUnit(AttackUnit unit)
     {
@@ -270,11 +276,18 @@ private:
     QList<SideOfBattle> side;
 };
 
-// Класс, который содержит поля интерфейса для заполнения юнита.
-class VisualManagerUnit
+// Класс, который содержит поля интерфейса для заполнения оружия или самого юнита.
+class VisualManagerUnitOrTool
 {
 public:
-    VisualManagerUnit(MainWindow * mainWindow, QComboBox * comboBox, QLabel * labelHealth, QLabel * labelDamage, QList<IHaveHealthDamageName*> * avalible)
+    VisualManagerUnitOrTool()
+    {
+        comboBox = nullptr;
+        labelHealth = nullptr;
+        labelDamage = nullptr;
+        avalible = nullptr;
+    }
+    VisualManagerUnitOrTool(MainWindow * mainWindow, QComboBox * comboBox, QLabel * labelHealth, QLabel * labelDamage, QList<IHaveHealthDamageName*> * avalible)
     {
         this->comboBox = comboBox;
         this->labelHealth = labelHealth;
@@ -282,23 +295,104 @@ public:
         this->avalible = avalible;
         mainWindow->connect(comboBox, SIGNAL(currentIndexChanged(int)), mainWindow, SLOT(eventCurrentIndexChanged(int)));
         if(comboBox->count() != 0)
-            throw new QException();
+            clear();
         for(IHaveHealthDamageName * elm : *avalible)
         {
             comboBox->addItem(elm->getName());
         }
     }
-    void update(void) const{
-
+    // Очищает текст и заного загружает в combobox элементы из списка.
+    void clear(void)
+    {
+        labelHealth->clear();
+        labelDamage->clear();
+        updateComboBoxElms();
+    }
+    // Возвращает выбранный объект.
+    IHaveHealthDamageName * getSelected()
+    {
+        if(comboBox->currentIndex() >= 0)
+            return avalible->at(comboBox->currentIndex());
+        else
+            return nullptr;
     }
 private:
+    // Очищает combobox и заного с списка его заполняет.
+    void updateComboBoxElms(void)
+    {
+        if(comboBox->count() != 0)
+            clear();
+        for(IHaveHealthDamageName * elm : *avalible)
+        {
+            comboBox->addItem(elm->getName());
+        }
+    }
     void eventCurrentIndexChanged(int index)
     {
-        labelHealth->setNum((double)(avalible->at(index)->getHealth()));
-        labelDamage->setNum((double)(avalible->at(index)->getDamage()));
+        if(index >= 0)
+        {
+            labelHealth->setNum((double)(avalible->at(index)->getHealth()));
+            labelDamage->setNum((double)(avalible->at(index)->getDamage()));
+        }
+        else {
+            labelHealth->setText("?");
+            labelDamage->setText("?");
+        }
     }
     QComboBox * comboBox;
     QLabel * labelHealth;
     QLabel * labelDamage;
     QList<IHaveHealthDamageName*> * avalible;
 };
+
+class VisualManagerFighter
+{
+public:
+    VisualManagerFighter(){}
+    VisualManagerFighter(VisualManagerUnitOrTool unit, VisualManagerUnitOrTool tool)
+    {
+        this->unit = unit;
+        this->tool = tool;
+    }
+    Fighter getSelected(void)
+    {
+        return Fighter(*(AttackUnit*)unit.getSelected(), *(ToolForWar*)tool.getSelected());
+    }
+private:
+    VisualManagerUnitOrTool unit;
+    VisualManagerUnitOrTool tool;
+};
+
+class VisualManagerSideOfBattle
+{
+public:
+    VisualManagerSideOfBattle()
+    {
+        labelHealth = nullptr;
+        labelDamage = nullptr;
+    }
+    VisualManagerSideOfBattle(QList<VisualManagerFighter> Fighters, QLabel * labelHealth, QLabel * labelDamage)
+    {
+        if(Fighters.count() != 3)
+            throw QException();
+        for(int i = 0; i < 3; i++)
+            fighters[i] = Fighters.at(i);
+        this->labelHealth = labelHealth;
+        this->labelDamage = labelDamage;
+    }
+    VisualManagerSideOfBattle(VisualManagerFighter Fighters[3], QLabel * labelHealth, QLabel * labelDamage)
+    {
+        for(int i = 0; i < 3; i++)
+            fighters[i] = Fighters[i];
+        this->labelHealth = labelHealth;
+        this->labelDamage = labelDamage;
+    }
+    SideOfBattle getSelected(void)
+    {
+    }
+private:
+    VisualManagerFighter fighters[3];
+    QLabel * labelHealth;
+    QLabel * labelDamage;
+};
+
